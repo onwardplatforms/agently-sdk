@@ -83,9 +83,13 @@ class Plugin:
 
             # Check if this method has been decorated with @kernel_function or @agently_function
             is_kernel_func = hasattr(method, "_is_kernel_function") and method._is_kernel_function
-            is_agently_func = hasattr(method, "_is_agently_function") and method._is_agently_function
-            is_sk_kernel_func = hasattr(method, "__kernel_function__") and method.__kernel_function__
-            
+            is_agently_func = (
+                hasattr(method, "_is_agently_function") and method._is_agently_function
+            )
+            is_sk_kernel_func = (
+                hasattr(method, "__kernel_function__") and method.__kernel_function__
+            )
+
             if is_kernel_func or is_agently_func or is_sk_kernel_func:
                 result[name] = method
 
