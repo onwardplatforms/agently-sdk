@@ -97,13 +97,14 @@ def test_plugin_variable_with_validation():
     )
 
     # Valid values
-    assert var.validate("red") is True
-    assert var.validate("green") is True
-    assert var.validate("blue") is True
+    assert var.validate("red") == (True, None)
+    assert var.validate("green") == (True, None)
+    assert var.validate("blue") == (True, None)
 
     # Invalid values
-    with pytest.raises(ValueError, match="failed validation"):
-        var.validate("yellow")
+    is_valid, error = var.validate("yellow")
+    assert not is_valid
+    assert "must be one of" in error
 
     # Test with range validation
     var = PluginVariable(
@@ -114,16 +115,18 @@ def test_plugin_variable_with_validation():
     )
 
     # Valid values
-    assert var.validate(1) is True
-    assert var.validate(5) is True
-    assert var.validate(10) is True
+    assert var.validate(1) == (True, None)
+    assert var.validate(5) == (True, None)
+    assert var.validate(10) == (True, None)
 
     # Invalid values
-    with pytest.raises(ValueError, match="failed validation"):
-        var.validate(0)
+    is_valid, error = var.validate(0)
+    assert not is_valid
+    assert ">= 1" in error
 
-    with pytest.raises(ValueError, match="failed validation"):
-        var.validate(11)
+    is_valid, error = var.validate(11)
+    assert not is_valid
+    assert "<= 10" in error
 
     # Test with pattern validation
     var = PluginVariable(
@@ -134,15 +137,17 @@ def test_plugin_variable_with_validation():
     )
 
     # Valid values
-    assert var.validate("user123") is True
-    assert var.validate("admin_user") is True
+    assert var.validate("user123") == (True, None)
+    assert var.validate("admin_user") == (True, None)
 
     # Invalid values
-    with pytest.raises(ValueError, match="failed validation"):
-        var.validate("User123")
+    is_valid, error = var.validate("User123")
+    assert not is_valid
+    assert "match pattern" in error
 
-    with pytest.raises(ValueError, match="failed validation"):
-        var.validate("user@123")
+    is_valid, error = var.validate("user@123")
+    assert not is_valid
+    assert "match pattern" in error
 
 
 def test_plugin_variable_with_choices():
@@ -160,13 +165,14 @@ def test_plugin_variable_with_choices():
     assert var.validation.options == ["red", "green", "blue"]
 
     # Valid values
-    assert var.validate("red") is True
-    assert var.validate("green") is True
-    assert var.validate("blue") is True
+    assert var.validate("red") == (True, None)
+    assert var.validate("green") == (True, None)
+    assert var.validate("blue") == (True, None)
 
     # Invalid values
-    with pytest.raises(ValueError):
-        var.validate("yellow")
+    is_valid, error = var.validate("yellow")
+    assert not is_valid
+    assert "must be one of" in error
 
 
 def test_to_dict_with_validation():

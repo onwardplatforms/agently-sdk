@@ -56,10 +56,33 @@ class Plugin:
         Args:
             **kwargs: Configuration values for plugin variables.
         """
-        # Set plugin variables from kwargs
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+        # Initialize the _values dictionary
+        self._values: Dict[str, Any] = {}
+
+        # Get all class attributes that are PluginVariables
+        variables = {}
+        for name, attr in inspect.getmembers(self.__class__):
+            if isinstance(attr, PluginVariable):
+                # Set the name if not already set
+                if attr.name is None:
+                    attr.name = name
+                variables[name] = attr
+
+        # Validate and set variables from kwargs
+        for name, value in kwargs.items():
+            if name in variables:
+                # This will validate and set the value through the descriptor
+                setattr(self, name, value)
+            elif hasattr(self, name):
+                # For non-PluginVariable attributes
+                setattr(self, name, value)
+            else:
+                raise ValueError(f"Unknown variable: {name}")
+
+        # Check for required variables (those without defaults)
+        for name, var in variables.items():
+            if name not in self._values and var.default_value is None:
+                raise ValueError(f"Required variable not provided: {name}")
 
     def get_kernel_functions(self) -> Dict[str, Callable]:
         """

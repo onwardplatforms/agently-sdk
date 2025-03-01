@@ -2,9 +2,11 @@
 Plugin variable system for Agently plugins.
 """
 
+# mypy: disable-error-code="assignment"
+
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Type, Union, cast
 
 
 @dataclass
@@ -39,7 +41,7 @@ class VariableValidation:
 
     options: Optional[List[Any]] = None
     range: Optional[Tuple[Optional[Any], Optional[Any]]] = None
-    pattern: Optional[Union[str, Pattern]] = None
+    pattern: Optional[Union[str, Pattern[str]]] = None
     error_message: Optional[str] = None
 
     def validate(self, value: Any) -> Tuple[bool, Optional[str]]:
@@ -126,89 +128,134 @@ class PluginVariable:
 
     def __init__(
         self,
-        name: str,
         description: str,
         default: Any = None,
-        required: bool = False,
-        validator: Optional[Callable[[Any], bool]] = None,
-        choices: Optional[List[Any]] = None,
         type: Optional[Type] = None,
+        choices: Optional[List[Any]] = None,
+        validator: Optional[Callable[[Any], bool]] = None,
         validation: Optional[VariableValidation] = None,
+        sensitive: bool = False,
+        # Backward compatibility parameters
+        default_value: Optional[Any] = None,
+        value_type: Optional[Type] = None,
+        name: Optional[str] = None,
     ):
         """
         Initialize a plugin variable.
 
         Args:
-            name: The name of the variable.
-            description: A description of what the variable is used for.
-            default: The default value if none is provided.
-            required: Whether this variable must be provided.
-            validator: Optional function that validates the value.
-            choices: Optional list of valid choices for the value.
-            type: Optional type constraint for the value.
-            validation: Optional structured validation rules.
+            description: Description of the variable
+            default: Default value for the variable
+            type: Type of the variable (e.g., str, int, etc.)
+            choices: List of valid values for the variable
+            validator: Custom validation function
+            validation: Validation rules for the variable
+            sensitive: Whether the variable contains sensitive information
+            default_value: (Deprecated) Use default instead
+            value_type: (Deprecated) Use type instead
+            name: Name of the variable (optional, will be set from class attribute name)
         """
         self.name = name
         self.description = description
-        self.default_value = default
-        self.required = required
-        self.validator = validator
-        self.choices = choices
-        self.value_type = type
-        self.validation = validation
 
-        # For backward compatibility, if choices are provided but no validation,
-        # create a validation object with those choices
-        if self.validation is None and self.choices is not None:
+        # Handle backward compatibility
+        self.default_value = default if default is not None else default_value
+        self.value_type = type if type is not None else value_type
+
+        self.choices = choices
+        self.validator = validator
+        self.validation = validation
+        self.sensitive = sensitive
+
+        # If choices are provided but no validation, create a validation object
+        if self.choices is not None and self.validation is None:
             self.validation = VariableValidation(options=self.choices)
 
         # Validate the default value if provided
         if self.default_value is not None:
             self.validate(self.default_value)
 
-    def validate(self, value: Any) -> bool:
+    def validate(self, value: Any) -> Tuple[bool, Optional[str]]:
         """
         Validate a value against this variable's constraints.
 
         Args:
-            value: The value to validate.
+            value: The value to validate
 
         Returns:
-            bool: True if the value is valid.
-
-        Raises:
-            ValueError: If the value is invalid.
+            A tuple of (is_valid, error_message)
         """
-        # Check if value is required but None
-        if self.required and value is None:
-            raise ValueError(f"Variable '{self.name}' is required but no value was provided")
+        # Check if value is required
+        if value is None and self.default_value is None:
+            return False, f"Variable '{self.name}' is required but no value was provided"
 
-        # If value is None and not required, it's valid
-        if value is None and not self.required:
-            return True
+        # If value is None and there is a default, it's valid
+        if value is None:
+            return True, None
 
-        # Check type constraint if specified
-        if self.value_type is not None and not isinstance(value, self.value_type):
-            raise ValueError(
-                f"Variable '{self.name}' must be of type {self.value_type.__name__}, "
-                f"got {type(value).__name__}"
-            )
+        # Type validation
+        try:
+            # Skip type validation if no type is specified
+            if self.value_type is not None:
+                # Handle nested types like List[str], Dict[str, int], etc.
+                if hasattr(self.value_type, "__origin__"):  # For generic types like List, Dict
+                    origin = self.value_type.__origin__
+                    args = self.value_type.__args__
+
+                    if origin == list:
+                        if not isinstance(value, list):
+                            return False, f"Variable '{self.name}' must be a list"
+                        # Validate each item in the list
+                        for item in value:
+                            if not isinstance(item, args[0]):
+                                return (
+                                    False,
+                                    f"List items in '{self.name}' must be of type {args[0].__name__}",
+                                )
+
+                    elif origin == dict:
+                        if not isinstance(value, dict):
+                            return False, f"Variable '{self.name}' must be a dictionary"
+                        # Validate dict key and value types
+                        for k, v in value.items():
+                            if not isinstance(k, args[0]):
+                                return (
+                                    False,
+                                    f"Dictionary keys in '{self.name}' must be of type {args[0].__name__}",
+                                )
+                            if not isinstance(v, args[1]):
+                                return (
+                                    False,
+                                    f"Dictionary values in '{self.name}' must be of type {args[1].__name__}",
+                                )
+                else:
+                    if not isinstance(value, self.value_type):
+                        return (
+                            False,
+                            f"Variable '{self.name}' must be of type {self.value_type.__name__}, got {type(value).__name__}",
+                        )
+        except Exception as e:
+            return False, f"Type validation error for '{self.name}': {str(e)}"
 
         # Check structured validation if specified
         if self.validation is not None:
             is_valid, error_message = self.validation.validate(value)
             if not is_valid:
-                raise ValueError(f"Variable '{self.name}' failed validation: {error_message}")
+                return False, f"Variable '{self.name}' failed validation: {error_message}"
 
         # Check choices constraint if specified (for backward compatibility)
         if self.choices is not None and value not in self.choices:
-            raise ValueError(f"Variable '{self.name}' must be one of {self.choices}, got {value}")
+            return False, f"Variable '{self.name}' must be one of {self.choices}, got {value}"
 
         # Check custom validator if specified
-        if self.validator is not None and not self.validator(value):
-            raise ValueError(f"Variable '{self.name}' failed validation: {value}")
+        if self.validator is not None:
+            try:
+                if not self.validator(value):
+                    return False, f"Variable '{self.name}' failed custom validation: {value}"
+            except Exception as e:
+                return False, f"Custom validation error for '{self.name}': {str(e)}"
 
-        return True
+        return True, None
 
     def __get__(self, obj: Any, objtype: Optional[Type] = None) -> Any:
         """
@@ -227,13 +274,12 @@ class PluginVariable:
         if obj is None:
             return self
 
-        # Use a private attribute on the instance to store the value
-        # This ensures each instance has its own value
-        private_name = f"_{self.name}_value"
-        if not hasattr(obj, private_name):
-            setattr(obj, private_name, self.default_value)
+        # Check if the _values dictionary exists on the instance
+        if not hasattr(obj, "_values"):
+            obj._values = {}
 
-        return getattr(obj, private_name)
+        # Return the value from the _values dict, or the default if not set
+        return obj._values.get(self.name, self.default_value)
 
     def __set__(self, obj: Any, value: Any) -> None:
         """
@@ -244,11 +290,21 @@ class PluginVariable:
         Args:
             obj: The instance the descriptor is accessed from
             value: The value to set
+
+        Raises:
+            ValueError: If the value is invalid
         """
-        if self.validate(value):
-            # Store the value in a private attribute on the instance
-            private_name = f"_{self.name}_value"
-            setattr(obj, private_name, value)
+        # Check if the _values dictionary exists on the instance
+        if not hasattr(obj, "_values"):
+            obj._values = {}
+
+        # Validate the value
+        is_valid, error = self.validate(value)
+        if not is_valid:
+            raise ValueError(error)
+
+        # Store the value in the _values dictionary
+        obj._values[self.name] = value
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -260,31 +316,42 @@ class PluginVariable:
         result = {
             "name": self.name,
             "description": self.description,
-            "required": self.required,
+            "sensitive": self.sensitive,
         }
 
-        if self.default_value is not None:
-            result["default"] = self.default_value
-
-        if self.choices is not None:
-            result["choices"] = self.choices
-
+        # Add type if available
         if self.value_type is not None:
             result["type"] = self.value_type.__name__
 
+        # Add default value if available
+        if self.default_value is not None:
+            result["default"] = self.default_value
+
+        # Add choices if available
+        if self.choices is not None:
+            result["choices"] = self.choices
+
+        # Add validation info if available
         if self.validation is not None:
             validation_info: Dict[str, Any] = {}
+
             if self.validation.options is not None:
-                validation_info["options"] = self.validation.options
+                validation_info["options"] = self.validation.options  # type: ignore[assignment]
+
             if self.validation.range is not None:
                 validation_info["range"] = self.validation.range  # type: ignore
+
             if self.validation.pattern is not None:
-                pattern = self.validation.pattern
-                if hasattr(pattern, "pattern"):
-                    validation_info["pattern"] = pattern.pattern  # type: ignore
+                if hasattr(self.validation.pattern, "pattern"):
+                    validation_info["pattern"] = self.validation.pattern.pattern  # type: ignore
                 else:
-                    validation_info["pattern"] = str(pattern)
-            result["validation"] = validation_info
+                    validation_info["pattern"] = str(self.validation.pattern)
+
+            if self.validation.error_message is not None:
+                validation_info["error_message"] = self.validation.error_message
+
+            if validation_info:
+                result["validation"] = validation_info  # type: ignore
 
         return result
 

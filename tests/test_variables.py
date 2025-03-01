@@ -14,11 +14,9 @@ def test_plugin_variable_initialization():
     assert var.name == "test_var"
     assert var.description == "A test variable"
     assert var.default_value == "default"
-    assert not var.required
 
-    # With required=True
-    var = PluginVariable(name="required_var", description="A required variable", required=True)
-    assert var.required
+    # With no default (implicitly required)
+    var = PluginVariable(name="required_var", description="A required variable")
     assert var.default_value is None
 
     # With choices
@@ -50,10 +48,12 @@ def test_plugin_variable_validation():
     # Type validation
     var = PluginVariable(name="int_var", description="An integer variable", type=int, default=42)
 
-    assert var.validate(100)  # Should pass
+    is_valid, _ = var.validate(100)  # Should pass
+    assert is_valid
 
-    with pytest.raises(ValueError):
-        var.validate("not an int")  # Should fail
+    is_valid, error = var.validate("not an int")  # Should fail
+    assert not is_valid
+    assert "must be of type" in error
 
     # Choices validation
     var = PluginVariable(
@@ -63,11 +63,14 @@ def test_plugin_variable_validation():
         default="red",
     )
 
-    assert var.validate("red")  # Should pass
-    assert var.validate("green")  # Should pass
+    is_valid, _ = var.validate("red")  # Should pass
+    assert is_valid
+    is_valid, _ = var.validate("green")  # Should pass
+    assert is_valid
 
-    with pytest.raises(ValueError):
-        var.validate("yellow")  # Should fail
+    is_valid, error = var.validate("yellow")  # Should fail
+    assert not is_valid
+    assert "must be one of" in error
 
     # Custom validator
     var = PluginVariable(
@@ -77,24 +80,27 @@ def test_plugin_variable_validation():
         default=2,
     )
 
-    assert var.validate(4)  # Should pass
-    assert var.validate(0)  # Should pass
+    is_valid, _ = var.validate(4)  # Should pass
+    assert is_valid
+    is_valid, _ = var.validate(0)  # Should pass
+    assert is_valid
 
-    with pytest.raises(ValueError):
-        var.validate(3)  # Should fail
+    is_valid, error = var.validate(3)  # Should fail
+    assert not is_valid
+    assert "failed custom validation" in error
 
-    # Required validation
+    # Required validation (no default)
     var = PluginVariable(
         name="required_var",
         description="A required variable",
-        required=True,
-        default="default",
     )
 
-    assert var.validate("value")  # Should pass
+    is_valid, _ = var.validate("value")  # Should pass
+    assert is_valid
 
-    with pytest.raises(ValueError):
-        var.validate(None)  # Should fail
+    is_valid, error = var.validate(None)  # Should fail
+    assert not is_valid
+    assert "is required" in error
 
 
 def test_plugin_variable_descriptor():
@@ -136,9 +142,9 @@ def test_to_dict():
         name="test_var",
         description="A test variable",
         default="default",
-        required=True,
         choices=["default", "option1", "option2"],
         type=str,
+        sensitive=True,
     )
 
     result = var.to_dict()
@@ -146,9 +152,9 @@ def test_to_dict():
     assert result["name"] == "test_var"
     assert result["description"] == "A test variable"
     assert result["default"] == "default"
-    assert result["required"] is True
     assert result["choices"] == ["default", "option1", "option2"]
     assert result["type"] == "str"
+    assert result["sensitive"] is True
 
 
 def test_plugin_variable_init():
@@ -156,7 +162,6 @@ def test_plugin_variable_init():
     assert var.name == "test"
     assert var.description == "Test variable"
     assert var.default_value == "default"
-    assert not var.required
 
     var = PluginVariable(name="test", description="Test variable")
     assert var.default_value is None
@@ -173,10 +178,13 @@ def test_plugin_variable_with_choices():
     assert var.default_value == "option1"
 
     # Test validation with choices
-    var.validate("option1")  # Should not raise
-    var.validate("option2")  # Should not raise
-    with pytest.raises(ValueError):
-        var.validate("option3")  # Should raise ValueError
+    is_valid, _ = var.validate("option1")  # Should not raise
+    assert is_valid
+    is_valid, _ = var.validate("option2")  # Should not raise
+    assert is_valid
+    is_valid, error = var.validate("option3")  # Should fail
+    assert not is_valid
+    assert "must be one of" in error
 
 
 def test_plugin_variable_with_type():
@@ -185,6 +193,8 @@ def test_plugin_variable_with_type():
     assert var.default_value == 10
 
     # Test validation with type
-    var.validate(20)  # Should not raise
-    with pytest.raises(ValueError):
-        var.validate("not an int")  # Should raise ValueError
+    is_valid, _ = var.validate(20)  # Should pass
+    assert is_valid
+    is_valid, error = var.validate("not an int")  # Should fail
+    assert not is_valid
+    assert "must be of type" in error
