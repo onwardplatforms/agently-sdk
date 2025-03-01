@@ -1,4 +1,4 @@
-.PHONY: help venv install install-dev clean test lint format check all
+.PHONY: help venv install install-dev clean test lint format check all version
 
 # Variables
 PYTHON = python3
@@ -25,6 +25,7 @@ help:
 	@echo "  make format      - Format code (black, isort)"
 	@echo "  make check       - Run type checking (mypy)"
 	@echo "  make all         - Run all checks (format, lint, type check, test)"
+	@echo "  make version V=X.Y.Z - Update version number to X.Y.Z"
 
 venv:
 	$(PYTHON) -m venv $(VENV)
@@ -58,3 +59,12 @@ check:
 	$(ACTIVATE) $(MYPY) $(SRC_DIR)
 
 all: format lint check test 
+
+version:
+	@if [ -z "$(V)" ]; then \
+		echo "Error: Version not specified. Use 'make version V=X.Y.Z'"; \
+		exit 1; \
+	fi
+	@echo "Updating version to $(V)"
+	@python scripts/update_version.py $(V)
+	@echo "Version updated. Don't forget to commit the changes." 
