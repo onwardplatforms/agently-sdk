@@ -1,16 +1,28 @@
 """
 Decorators for Agently plugins.
 
-This module provides the kernel_function decorator for use in Agently plugins.
+This module provides decorators for use in Agently plugins.
 """
 
 import functools
-from typing import Any, Callable, Optional, TypeVar, cast
+import inspect
+from typing import Any, Callable, Optional, TypeVar, cast, Union
+
+# Import the original kernel_function from semantic_kernel
+try:
+    from semantic_kernel.functions import kernel_function as sk_kernel_function
+    # Check what parameters sk_kernel_function accepts
+    sk_params = inspect.signature(sk_kernel_function).parameters
+    SK_ACCEPTS_INPUT_DESC = "input_description" in sk_params
+except ImportError:
+    # Fallback implementation if semantic_kernel is not installed
+    sk_kernel_function = None
+    SK_ACCEPTS_INPUT_DESC = False
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def kernel_function(
+def agently_function(
     func: Optional[F] = None,
     *,
     description: Optional[str] = None,
@@ -18,16 +30,19 @@ def kernel_function(
     input_description: Optional[str] = None,
 ) -> Any:
     """
-    Decorator for functions that should be exposed as kernel functions.
+    Decorator for functions that should be exposed as Agently functions.
+    
+    This wraps the semantic_kernel.functions.kernel_function decorator
+    while maintaining compatibility with our existing code.
 
     This can be used with or without arguments:
 
-    @kernel_function
+    @agently_function
     def my_func(): ...
 
     or
 
-    @kernel_function(description="My function")
+    @agently_function(description="My function")
     def my_func(): ...
 
     Args:
@@ -39,34 +54,60 @@ def kernel_function(
     Returns:
         The decorated function
     """
-    # Handle the case where decorator is used without arguments
-    if func is not None:
-
-        @functools.wraps(func)
-        def direct_wrapper(*args: Any, **kwargs: Any) -> Any:
-            return func(*args, **kwargs)
-
-        direct_wrapper._is_kernel_function = True  # type: ignore
-        direct_wrapper._description = description  # type: ignore
-        direct_wrapper._name = name  # type: ignore
-        direct_wrapper._input_description = input_description  # type: ignore
-
-        return cast(F, direct_wrapper)
-
-    # Handle the case where decorator is used with arguments
-    def decorator(inner_func: F) -> F:
-        @functools.wraps(inner_func)
+    def apply_our_decorator(f: F) -> F:
+        """Apply our decorator logic to ensure compatibility with our Plugin class."""
+        @functools.wraps(f)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            return inner_func(*args, **kwargs)
-
+            return f(*args, **kwargs)
+        
+        # Ensure our Plugin class can find this function
         wrapper._is_kernel_function = True  # type: ignore
+        wrapper._is_agently_function = True  # type: ignore
         wrapper._description = description  # type: ignore
         wrapper._name = name  # type: ignore
         wrapper._input_description = input_description  # type: ignore
-
+        
+        # Add the __kernel_function__ attribute for compatibility with Semantic Kernel
+        setattr(wrapper, "__kernel_function__", True)
+        
         return cast(F, wrapper)
+    
+    # If semantic_kernel is available, use its decorator first
+    if sk_kernel_function is not None:
+        # Handle the case where decorator is used without arguments
+        if func is not None:
+            # First apply the SK decorator, then our compatibility layer
+            sk_decorated = sk_kernel_function(func)
+            return apply_our_decorator(sk_decorated)
+        
+        # Handle the case where decorator is used with arguments
+        def decorator(inner_func: F) -> F:
+            # First apply the SK decorator with arguments
+            # Only pass parameters that SK accepts
+            sk_kwargs = {"description": description, "name": name}
+            if SK_ACCEPTS_INPUT_DESC and input_description is not None:
+                sk_kwargs["input_description"] = input_description
+                
+            sk_decorated = sk_kernel_function(**sk_kwargs)(inner_func)
+            # Then apply our compatibility layer
+            return apply_our_decorator(sk_decorated)
+        
+        return decorator
+    else:
+        # Fallback to our implementation if semantic_kernel is not available
+        # Handle the case where decorator is used without arguments
+        if func is not None:
+            return apply_our_decorator(func)
+        
+        # Handle the case where decorator is used with arguments
+        def decorator(inner_func: F) -> F:
+            return apply_our_decorator(inner_func)
+        
+        return decorator
 
-    return decorator
+
+# Keep kernel_function as an alias for backward compatibility
+kernel_function = agently_function
 
 
-__all__ = ["kernel_function"]
+__all__ = ["agently_function", "kernel_function"]

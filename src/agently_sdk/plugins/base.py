@@ -13,11 +13,11 @@ class Plugin:
     Base class for all Agently plugins.
 
     Plugins are classes that provide functionality to Agently agents through
-    methods decorated with @kernel_function from semantic_kernel.functions.
+    methods decorated with @agently_function or @kernel_function.
 
     Example:
         ```python
-        from agently_sdk.plugins import Plugin, PluginVariable, kernel_function
+        from agently_sdk.plugins import Plugin, PluginVariable, agently_function
 
         class HelloPlugin(Plugin):
             # A simple greeting plugin
@@ -31,7 +31,7 @@ class Plugin:
                 default_value="World"
             )
 
-            @kernel_function
+            @agently_function
             def greet(self, name: Optional[str] = None) -> str:
                 # Greet someone with a friendly message.
                 #
@@ -63,11 +63,13 @@ class Plugin:
 
     def get_kernel_functions(self) -> Dict[str, Callable]:
         """
-        Get all methods in this class decorated with @kernel_function.
+        Get all methods in this class decorated with @kernel_function or @agently_function.
 
         The @kernel_function decorator from semantic_kernel.functions adds
-        an attribute _is_kernel_function to the method, which we use to
-        identify kernel functions.
+        an attribute __kernel_function__ to the method, which we use to
+        identify kernel functions. Our @agently_function decorator adds both
+        _is_kernel_function and _is_agently_function attributes, as well as
+        the __kernel_function__ attribute for compatibility.
 
         Returns:
             Dict[str, Callable]: A dictionary mapping function names to function objects.
@@ -79,8 +81,12 @@ class Plugin:
             if name.startswith("_"):
                 continue
 
-            # Check if this method has been decorated with @kernel_function
-            if hasattr(method, "_is_kernel_function") and method._is_kernel_function:
+            # Check if this method has been decorated with @kernel_function or @agently_function
+            is_kernel_func = hasattr(method, "_is_kernel_function") and method._is_kernel_function
+            is_agently_func = hasattr(method, "_is_agently_function") and method._is_agently_function
+            is_sk_kernel_func = hasattr(method, "__kernel_function__") and method.__kernel_function__
+            
+            if is_kernel_func or is_agently_func or is_sk_kernel_func:
                 result[name] = method
 
         return result
