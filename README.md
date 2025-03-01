@@ -75,23 +75,34 @@ The `PluginVariable` class represents a configurable variable for a plugin. It a
 
 ### Kernel Function Decorator
 
-The `@kernel_function` decorator marks methods as callable by the agent. It is imported from `semantic_kernel.functions`.
+Agently SDK provides two decorators for marking methods as callable by agents:
+
+1. `@agently_function` - The recommended decorator for Agently plugins
+2. `@kernel_function` - An alias for `@agently_function` provided for backward compatibility
+
+Both decorators wrap the `kernel_function` decorator from `semantic_kernel.functions` while maintaining compatibility with our existing code. If the Semantic Kernel package is not available, they fall back to a compatible implementation.
 
 ```python
-@kernel_function
-def my_function(self, param1: str, param2: int = 0) -> str:
-    """
-    Function docstring that describes what this function does.
+from agently_sdk.plugins import Plugin, PluginVariable, agently_function
+
+class MyPlugin(Plugin):
+    name = "my_plugin"
+    description = "A sample plugin"
     
-    Args:
-        param1: Description of param1
-        param2: Description of param2
+    @agently_function
+    def my_function(self, param1: str, param2: int = 0) -> str:
+        """
+        Function docstring that describes what this function does.
         
-    Returns:
-        Description of the return value
-    """
-    # Implementation
-    return result
+        Args:
+            param1: Description of param1
+            param2: Description of param2
+            
+        Returns:
+            Description of the return value
+        """
+        # Implementation
+        return result
 ```
 
 ## Best Practices
