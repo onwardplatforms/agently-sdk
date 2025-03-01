@@ -12,9 +12,7 @@ class ValidPlugin(Plugin):
     name = "valid_plugin"
     description = "A valid plugin for testing"
 
-    test_var = PluginVariable(
-        name="test_var", description="A test variable", default_value="default"
-    )
+    test_var = PluginVariable(name="test_var", description="A test variable", default="default")
 
     @kernel_function
     def test_function(self) -> str:
@@ -29,9 +27,7 @@ class InvalidPlugin(Plugin):
     description = "An invalid plugin for testing"
 
     # Variable with mismatched name
-    test_var = PluginVariable(
-        name="wrong_name", description="A test variable", default_value="default"
-    )
+    test_var = PluginVariable(name="wrong_name", description="A test variable", default="default")
 
     # No kernel functions
 
@@ -44,7 +40,7 @@ def test_get_plugin_info():
     assert info["description"] == "A valid plugin for testing"
     assert "test_var" in info["variables"]
     assert info["variables"]["test_var"]["name"] == "test_var"
-    assert info["variables"]["test_var"]["default_value"] == "default"
+    assert info["variables"]["test_var"]["default"] == "default"
     assert "test_function" in info["functions"]
 
 

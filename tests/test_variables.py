@@ -10,7 +10,7 @@ from agently_sdk.plugins.variables import PluginVariable
 def test_plugin_variable_initialization():
     """Test that a plugin variable can be initialized with various options."""
     # Basic initialization
-    var = PluginVariable(name="test_var", description="A test variable", default_value="default")
+    var = PluginVariable(name="test_var", description="A test variable", default="default")
     assert var.name == "test_var"
     assert var.description == "A test variable"
     assert var.default_value == "default"
@@ -26,7 +26,7 @@ def test_plugin_variable_initialization():
         name="choice_var",
         description="A variable with choices",
         choices=["option1", "option2", "option3"],
-        default_value="option1",
+        default="option1",
     )
     assert var.choices == ["option1", "option2", "option3"]
     assert var.default_value == "option1"
@@ -39,7 +39,7 @@ def test_plugin_variable_initialization():
         name="validated_var",
         description="A variable with a validator",
         validator=is_positive,
-        default_value=10,
+        default=10,
     )
     assert var.validator is is_positive
     assert var.default_value == 10
@@ -48,9 +48,7 @@ def test_plugin_variable_initialization():
 def test_plugin_variable_validation():
     """Test that plugin variables validate values correctly."""
     # Type validation
-    var = PluginVariable(
-        name="int_var", description="An integer variable", value_type=int, default_value=42
-    )
+    var = PluginVariable(name="int_var", description="An integer variable", type=int, default=42)
 
     assert var.validate(100)  # Should pass
 
@@ -62,7 +60,7 @@ def test_plugin_variable_validation():
         name="choice_var",
         description="A variable with choices",
         choices=["red", "green", "blue"],
-        default_value="red",
+        default="red",
     )
 
     assert var.validate("red")  # Should pass
@@ -76,7 +74,7 @@ def test_plugin_variable_validation():
         name="even_var",
         description="Must be an even number",
         validator=lambda x: x % 2 == 0,
-        default_value=2,
+        default=2,
     )
 
     assert var.validate(4)  # Should pass
@@ -90,7 +88,7 @@ def test_plugin_variable_validation():
         name="required_var",
         description="A required variable",
         required=True,
-        default_value="default",
+        default="default",
     )
 
     assert var.validate("value")  # Should pass
@@ -103,9 +101,7 @@ def test_plugin_variable_descriptor():
     """Test that plugin variables work as descriptors."""
 
     class TestClass:
-        var = PluginVariable(
-            name="test_var", description="A test variable", default_value="default"
-        )
+        var = PluginVariable(name="test_var", description="A test variable", default="default")
 
     obj = TestClass()
 
@@ -118,7 +114,7 @@ def test_plugin_variable_descriptor():
 
     # Try to set an invalid value (if we had validation)
     var_with_validation = PluginVariable(
-        name="validated_var", description="A validated variable", value_type=int, default_value=1
+        name="validated_var", description="A validated variable", type=int, default=1
     )
 
     # Replace the descriptor
@@ -139,17 +135,17 @@ def test_to_dict():
     var = PluginVariable(
         name="test_var",
         description="A test variable",
-        default_value="default",
+        default="default",
         required=True,
         choices=["default", "option1", "option2"],
-        value_type=str,
+        type=str,
     )
 
     result = var.to_dict()
 
     assert result["name"] == "test_var"
     assert result["description"] == "A test variable"
-    assert result["default_value"] == "default"
+    assert result["default"] == "default"
     assert result["required"] is True
     assert result["choices"] == ["default", "option1", "option2"]
-    assert result["value_type"] == "str"
+    assert result["type"] == "str"

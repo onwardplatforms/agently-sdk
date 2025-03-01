@@ -92,7 +92,7 @@ def test_plugin_variable_with_validation():
     var = PluginVariable(
         name="color",
         description="Color to use",
-        default_value="blue",
+        default="blue",
         validation=VariableValidation(options=["red", "green", "blue"]),
     )
 
@@ -109,7 +109,7 @@ def test_plugin_variable_with_validation():
     var = PluginVariable(
         name="count",
         description="Count value",
-        default_value=5,
+        default=5,
         validation=VariableValidation(range=(1, 10)),
     )
 
@@ -129,7 +129,7 @@ def test_plugin_variable_with_validation():
     var = PluginVariable(
         name="username",
         description="Username",
-        default_value="user123",
+        default="user123",
         validation=VariableValidation(pattern=r"^[a-z0-9_]+$"),
     )
 
@@ -151,7 +151,7 @@ def test_plugin_variable_backward_compatibility():
     var = PluginVariable(
         name="color",
         description="Color to use",
-        default_value="blue",
+        default="blue",
         choices=["red", "green", "blue"],
     )
 
@@ -175,7 +175,7 @@ def test_to_dict_with_validation():
     var = PluginVariable(
         name="count",
         description="Count value",
-        default_value=5,
+        default=5,
         validation=VariableValidation(
             range=(1, 10), error_message="Count must be between 1 and 10"
         ),

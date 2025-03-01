@@ -103,14 +103,14 @@ class PluginVariable:
             greeting = PluginVariable(
                 name="greeting",
                 description="The greeting to use",
-                default_value="Hello"
+                default="Hello"
             )
 
             # Define a variable with validation
             count = PluginVariable(
                 name="count",
                 description="Number of times to repeat",
-                default_value=1,
+                default=1,
                 validation=VariableValidation(range=(1, 10))
             )
 
@@ -118,7 +118,7 @@ class PluginVariable:
             color = PluginVariable(
                 name="color",
                 description="Color to use",
-                default_value="blue",
+                default="blue",
                 validation=VariableValidation(options=["red", "green", "blue"])
             )
         ```
@@ -128,12 +128,15 @@ class PluginVariable:
         self,
         name: str,
         description: str,
-        default_value: Any = None,
+        default: Any = None,
         required: bool = False,
         validator: Optional[Callable[[Any], bool]] = None,
         choices: Optional[List[Any]] = None,
-        value_type: Optional[Type] = None,
+        type: Optional[Type] = None,
         validation: Optional[VariableValidation] = None,
+        # For backward compatibility
+        default_value: Any = None,
+        value_type: Optional[Type] = None,
     ):
         """
         Initialize a plugin variable.
@@ -141,20 +144,24 @@ class PluginVariable:
         Args:
             name: The name of the variable.
             description: A description of what the variable is used for.
-            default_value: The default value if none is provided.
+            default: The default value if none is provided.
             required: Whether this variable must be provided.
             validator: Optional function that validates the value.
             choices: Optional list of valid choices for the value.
-            value_type: Optional type constraint for the value.
+            type: Optional type constraint for the value.
             validation: Optional structured validation rules.
+            default_value: Deprecated, use default instead.
+            value_type: Deprecated, use type instead.
         """
         self.name = name
         self.description = description
-        self.default_value = default_value
+        # Handle backward compatibility
+        self.default_value = default if default is not None else default_value
         self.required = required
         self.validator = validator
         self.choices = choices
-        self.value_type = value_type
+        # Handle backward compatibility
+        self.value_type = type if type is not None else value_type
         self.validation = validation
 
         # For backward compatibility, if choices are provided but no validation,
@@ -163,8 +170,8 @@ class PluginVariable:
             self.validation = VariableValidation(options=self.choices)
 
         # Validate the default value if provided
-        if default_value is not None:
-            self.validate(default_value)
+        if self.default_value is not None:
+            self.validate(self.default_value)
 
     def validate(self, value: Any) -> bool:
         """
@@ -264,13 +271,13 @@ class PluginVariable:
         }
 
         if self.default_value is not None:
-            result["default_value"] = self.default_value
+            result["default"] = self.default_value
 
         if self.choices is not None:
             result["choices"] = self.choices
 
         if self.value_type is not None:
-            result["value_type"] = self.value_type.__name__
+            result["type"] = self.value_type.__name__
 
         if self.validation is not None:
             validation_info: Dict[str, Any] = {}

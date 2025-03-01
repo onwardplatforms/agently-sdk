@@ -25,7 +25,7 @@ class HelloPlugin(Plugin):
     default_name = PluginVariable(
         name="default_name",
         description="Default name to use in greetings",
-        default_value="World"
+        default="World"
     )
     
     @kernel_function
@@ -56,15 +56,15 @@ The `Plugin` class is the base class for all Agently plugins. It provides the st
 
 The `PluginVariable` class represents a configurable variable for a plugin. It allows plugins to be configured with different values when they are loaded by Agently.
 
-| Parameter       | Type                    | Required | Default | Description                                    |
-| --------------- | ----------------------- | -------- | ------- | ---------------------------------------------- |
-| `name`          | `str`                   | Yes      | -       | The name of the variable                       |
-| `description`   | `str`                   | Yes      | -       | A description of what the variable is used for |
-| `default_value` | `Any`                   | No       | `None`  | The default value if none is provided          |
-| `required`      | `bool`                  | No       | `False` | Whether this variable must be provided         |
-| `validator`     | `Callable[[Any], bool]` | No       | `None`  | Optional function that validates the value     |
-| `choices`       | `List[Any]`             | No       | `None`  | Optional list of valid choices for the value   |
-| `value_type`    | `Type`                  | No       | `None`  | Optional type constraint for the value         |
+| Parameter     | Type                    | Required | Default | Description                                    |
+| ------------- | ----------------------- | -------- | ------- | ---------------------------------------------- |
+| `name`        | `str`                   | Yes      | -       | The name of the variable                       |
+| `description` | `str`                   | Yes      | -       | A description of what the variable is used for |
+| `default`     | `Any`                   | No       | `None`  | The default value if none is provided          |
+| `required`    | `bool`                  | No       | `False` | Whether this variable must be provided         |
+| `validator`   | `Callable[[Any], bool]` | No       | `None`  | Optional function that validates the value     |
+| `choices`     | `List[Any]`             | No       | `None`  | Optional list of valid choices for the value   |
+| `type`        | `Type`                  | No       | `None`  | Optional type constraint for the value         |
 
 #### Methods
 

@@ -28,7 +28,7 @@ class Plugin:
             default_name = PluginVariable(
                 name="default_name",
                 description="Default name to use in greetings",
-                default_value="World"
+                default="World"
             )
 
             @agently_function
