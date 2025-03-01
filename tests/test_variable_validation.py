@@ -145,8 +145,8 @@ def test_plugin_variable_with_validation():
         var.validate("user@123")
 
 
-def test_plugin_variable_backward_compatibility():
-    """Test that PluginVariable maintains backward compatibility with choices."""
+def test_plugin_variable_with_choices():
+    """Test that PluginVariable works correctly with choices."""
     # Create a variable with choices
     var = PluginVariable(
         name="color",

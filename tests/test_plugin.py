@@ -13,12 +13,10 @@ class SamplePlugin(Plugin):
     name = "sample_plugin"
     description = "A plugin for testing"
 
-    test_var = PluginVariable(
-        name="test_var", description="A test variable", default_value="default"
-    )
+    test_var = PluginVariable(name="test_var", description="A test variable", default="default")
 
     number_var = PluginVariable(
-        name="number_var", description="A numeric variable", default_value=42, value_type=int
+        name="number_var", description="A numeric variable", default=42, type=int
     )
 
     @kernel_function

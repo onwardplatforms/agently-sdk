@@ -134,9 +134,6 @@ class PluginVariable:
         choices: Optional[List[Any]] = None,
         type: Optional[Type] = None,
         validation: Optional[VariableValidation] = None,
-        # For backward compatibility
-        default_value: Any = None,
-        value_type: Optional[Type] = None,
     ):
         """
         Initialize a plugin variable.
@@ -150,18 +147,14 @@ class PluginVariable:
             choices: Optional list of valid choices for the value.
             type: Optional type constraint for the value.
             validation: Optional structured validation rules.
-            default_value: Deprecated, use default instead.
-            value_type: Deprecated, use type instead.
         """
         self.name = name
         self.description = description
-        # Handle backward compatibility
-        self.default_value = default if default is not None else default_value
+        self.default_value = default
         self.required = required
         self.validator = validator
         self.choices = choices
-        # Handle backward compatibility
-        self.value_type = type if type is not None else value_type
+        self.value_type = type
         self.validation = validation
 
         # For backward compatibility, if choices are provided but no validation,

@@ -149,3 +149,42 @@ def test_to_dict():
     assert result["required"] is True
     assert result["choices"] == ["default", "option1", "option2"]
     assert result["type"] == "str"
+
+
+def test_plugin_variable_init():
+    var = PluginVariable(name="test", description="Test variable", default="default")
+    assert var.name == "test"
+    assert var.description == "Test variable"
+    assert var.default_value == "default"
+    assert not var.required
+
+    var = PluginVariable(name="test", description="Test variable")
+    assert var.default_value is None
+
+
+def test_plugin_variable_with_choices():
+    var = PluginVariable(
+        name="test",
+        description="Test variable",
+        choices=["option1", "option2"],
+        default="option1",
+    )
+    assert var.choices == ["option1", "option2"]
+    assert var.default_value == "option1"
+
+    # Test validation with choices
+    var.validate("option1")  # Should not raise
+    var.validate("option2")  # Should not raise
+    with pytest.raises(ValueError):
+        var.validate("option3")  # Should raise ValueError
+
+
+def test_plugin_variable_with_type():
+    var = PluginVariable(name="test", description="Test variable", type=int, default=10)
+    assert var.value_type == int
+    assert var.default_value == 10
+
+    # Test validation with type
+    var.validate(20)  # Should not raise
+    with pytest.raises(ValueError):
+        var.validate("not an int")  # Should raise ValueError
