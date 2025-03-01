@@ -1,2 +1,8 @@
 build
 twine
+pytest
+pytest-cov
+black
+isort
+mypy
+semantic-kernel
