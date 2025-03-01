@@ -2,7 +2,85 @@
 Plugin variable system for Agently plugins.
 """
 
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+import re
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Type, Union
+
+
+@dataclass
+class VariableValidation:
+    """
+    Validation rules for plugin variables.
+
+    This class provides a structured way to define validation rules for plugin variables.
+    It supports options (choices), range validation, and pattern matching.
+
+    Example:
+        ```python
+        # Create a validation rule for a string that must match a pattern
+        validation = VariableValidation(
+            pattern=r"^[a-zA-Z0-9_]+$",
+            error_message="Value must contain only alphanumeric characters and underscores"
+        )
+
+        # Create a validation rule for a number in a specific range
+        validation = VariableValidation(
+            range=(0, 100),
+            error_message="Value must be between 0 and 100"
+        )
+
+        # Create a validation rule with specific options
+        validation = VariableValidation(
+            options=["red", "green", "blue"],
+            error_message="Value must be one of: red, green, blue"
+        )
+        ```
+    """
+
+    options: Optional[List[Any]] = None
+    range: Optional[Tuple[Optional[Any], Optional[Any]]] = None
+    pattern: Optional[Union[str, Pattern]] = None
+    error_message: Optional[str] = None
+
+    def validate(self, value: Any) -> Tuple[bool, Optional[str]]:
+        """
+        Validate a value against the rules.
+
+        Args:
+            value: The value to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        if self.options is not None and value not in self.options:
+            return False, self.error_message or f"Value must be one of: {self.options}"
+
+        if self.range is not None:
+            min_val, max_val = self.range
+            if min_val is not None and value < min_val:
+                return False, self.error_message or f"Value must be >= {min_val}"
+            if max_val is not None and value > max_val:
+                return False, self.error_message or f"Value must be <= {max_val}"
+
+        if self.pattern is not None:
+            if not isinstance(value, str):
+                return (
+                    False,
+                    self.error_message or "Value must be a string for pattern validation",
+                )
+
+            # Convert string pattern to compiled pattern if needed
+            pattern = self.pattern
+            if isinstance(pattern, str):
+                pattern = re.compile(pattern)
+
+            if not pattern.match(value):
+                return (
+                    False,
+                    self.error_message or f"Value must match pattern: {self.pattern}",
+                )
+
+        return True, None
 
 
 class PluginVariable:
@@ -15,7 +93,7 @@ class PluginVariable:
 
     Example:
         ```python
-        from agently_sdk.plugins import Plugin, PluginVariable
+        from agently_sdk.plugins import Plugin, PluginVariable, VariableValidation
 
         class MyPlugin(Plugin):
             name = "my_plugin"
@@ -33,8 +111,15 @@ class PluginVariable:
                 name="count",
                 description="Number of times to repeat",
                 default_value=1,
-                validator=lambda x: isinstance(x, int) and x > 0,
-                value_type=int
+                validation=VariableValidation(range=(1, 10))
+            )
+
+            # Define a variable with options
+            color = PluginVariable(
+                name="color",
+                description="Color to use",
+                default_value="blue",
+                validation=VariableValidation(options=["red", "green", "blue"])
             )
         ```
     """
@@ -48,6 +133,7 @@ class PluginVariable:
         validator: Optional[Callable[[Any], bool]] = None,
         choices: Optional[List[Any]] = None,
         value_type: Optional[Type] = None,
+        validation: Optional[VariableValidation] = None,
     ):
         """
         Initialize a plugin variable.
@@ -60,6 +146,7 @@ class PluginVariable:
             validator: Optional function that validates the value.
             choices: Optional list of valid choices for the value.
             value_type: Optional type constraint for the value.
+            validation: Optional structured validation rules.
         """
         self.name = name
         self.description = description
@@ -68,6 +155,12 @@ class PluginVariable:
         self.validator = validator
         self.choices = choices
         self.value_type = value_type
+        self.validation = validation
+
+        # For backward compatibility, if choices are provided but no validation,
+        # create a validation object with those choices
+        if self.validation is None and self.choices is not None:
+            self.validation = VariableValidation(options=self.choices)
 
         # Validate the default value if provided
         if default_value is not None:
@@ -101,7 +194,13 @@ class PluginVariable:
                 f"got {type(value).__name__}"
             )
 
-        # Check choices constraint if specified
+        # Check structured validation if specified
+        if self.validation is not None:
+            is_valid, error_message = self.validation.validate(value)
+            if not is_valid:
+                raise ValueError(f"Variable '{self.name}' failed validation: {error_message}")
+
+        # Check choices constraint if specified (for backward compatibility)
         if self.choices is not None and value not in self.choices:
             raise ValueError(f"Variable '{self.name}' must be one of {self.choices}, got {value}")
 
@@ -173,4 +272,21 @@ class PluginVariable:
         if self.value_type is not None:
             result["value_type"] = self.value_type.__name__
 
+        if self.validation is not None:
+            validation_info: Dict[str, Any] = {}
+            if self.validation.options is not None:
+                validation_info["options"] = self.validation.options
+            if self.validation.range is not None:
+                validation_info["range"] = self.validation.range  # type: ignore
+            if self.validation.pattern is not None:
+                pattern = self.validation.pattern
+                if hasattr(pattern, "pattern"):
+                    validation_info["pattern"] = pattern.pattern  # type: ignore
+                else:
+                    validation_info["pattern"] = str(pattern)
+            result["validation"] = validation_info
+
         return result
+
+
+__all__ = ["PluginVariable", "VariableValidation"]

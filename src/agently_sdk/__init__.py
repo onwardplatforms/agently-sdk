@@ -7,6 +7,12 @@ Currently focused on plugin development, with more capabilities planned for futu
 from agently_sdk._version import __version__
 
 # Import plugin-related components for convenience
-from agently_sdk.plugins import Plugin, PluginVariable, agently_function, kernel_function
+from agently_sdk.plugins import (
+    Plugin,
+    PluginVariable,
+    VariableValidation,
+    agently_function,
+    kernel_function,
+)
 
-__all__ = ["Plugin", "PluginVariable", "agently_function", "kernel_function"]
+__all__ = ["Plugin", "PluginVariable", "VariableValidation", "agently_function", "kernel_function"]
