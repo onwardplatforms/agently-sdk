@@ -8,4 +8,4 @@ from agently_sdk.plugins.base import Plugin
 from agently_sdk.plugins.decorators import kernel_function
 from agently_sdk.plugins.variables import PluginVariable
 
-__all__ = ["Plugin", "PluginVariable", "kernel_function"] 
+__all__ = ["Plugin", "PluginVariable", "kernel_function"]
