@@ -43,8 +43,7 @@ def test_plugin_initialization():
 
 def test_get_kernel_functions():
     """Test that get_kernel_functions returns only kernel functions."""
-    plugin = SamplePlugin()
-    functions = plugin.get_kernel_functions()
+    functions = SamplePlugin.get_kernel_functions()
 
     assert "test_function" in functions
     assert "use_var" in functions

@@ -22,9 +22,8 @@ def get_plugin_info(plugin_class: Type[Plugin]) -> Dict[str, Any]:
     variables = plugin_class.get_plugin_variables()
     variable_info = {name: var.to_dict() for name, var in variables.items()}
 
-    # Create a temporary instance to get kernel functions
-    plugin_instance = plugin_class()
-    functions = plugin_instance.get_kernel_functions()
+    # Get kernel functions directly from the class
+    functions = plugin_class.get_kernel_functions()
     function_names = list(functions.keys())
 
     return {
@@ -55,8 +54,7 @@ def validate_plugin(plugin_class: Type[Plugin]) -> List[str]:
         issues.append("Plugin is missing a description attribute")
 
     # Check that there's at least one kernel function
-    plugin_instance = plugin_class()
-    functions = plugin_instance.get_kernel_functions()
+    functions = plugin_class.get_kernel_functions()
     if not functions:
         issues.append("Plugin has no kernel functions")
 

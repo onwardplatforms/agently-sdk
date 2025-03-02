@@ -84,7 +84,8 @@ class Plugin:
             if name not in self._values and var.default_value is None:
                 raise ValueError(f"Required variable not provided: {name}")
 
-    def get_kernel_functions(self) -> Dict[str, Callable]:
+    @classmethod
+    def get_kernel_functions(cls) -> Dict[str, Callable]:
         """
         Get all methods in this class decorated with @kernel_function or @agently_function.
 
@@ -99,22 +100,22 @@ class Plugin:
         """
         result: dict[str, Callable[..., Any]] = {}
 
-        for name, method in inspect.getmembers(self, inspect.ismethod):
+        for name, func in inspect.getmembers(cls):
             # Skip private methods
             if name.startswith("_"):
                 continue
 
+            # Skip non-functions
+            if not inspect.isfunction(func):
+                continue
+
             # Check if this method has been decorated with @kernel_function or @agently_function
-            is_kernel_func = hasattr(method, "_is_kernel_function") and method._is_kernel_function
-            is_agently_func = (
-                hasattr(method, "_is_agently_function") and method._is_agently_function
-            )
-            is_sk_kernel_func = (
-                hasattr(method, "__kernel_function__") and method.__kernel_function__
-            )
+            is_kernel_func = hasattr(func, "_is_kernel_function") and func._is_kernel_function
+            is_agently_func = hasattr(func, "_is_agently_function") and func._is_agently_function
+            is_sk_kernel_func = hasattr(func, "__kernel_function__") and func.__kernel_function__
 
             if is_kernel_func or is_agently_func or is_sk_kernel_func:
-                result[name] = method
+                result[name] = func
 
         return result
 
