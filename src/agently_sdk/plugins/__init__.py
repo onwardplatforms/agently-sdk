@@ -5,7 +5,21 @@ This package contains the core components needed to develop plugins for the Agen
 """
 
 from agently_sdk.plugins.base import Plugin
-from agently_sdk.plugins.decorators import agently_function, kernel_function
-from agently_sdk.plugins.variables import PluginVariable, VariableValidation
+from agently_sdk.plugins.decorators import agently_function, kernel_function, track_function_calls
+from agently_sdk.plugins.variables import (
+    ExecutionResult,
+    PluginVariable,
+    VariableValidation,
+    get_result,
+)
 
-__all__ = ["Plugin", "PluginVariable", "VariableValidation", "agently_function", "kernel_function"]
+__all__ = [
+    "Plugin",
+    "PluginVariable",
+    "VariableValidation",
+    "agently_function",
+    "kernel_function",
+    "ExecutionResult",
+    "track_function_calls",
+    "get_result",
+]

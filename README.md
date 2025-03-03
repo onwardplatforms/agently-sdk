@@ -89,7 +89,7 @@ class MyPlugin(Plugin):
     name = "my_plugin"
     description = "A sample plugin"
     
-    @agently_function
+    @agently_function(action="Performing calculation")
     def my_function(self, param1: str, param2: int = 0) -> str:
         """
         Function docstring that describes what this function does.
@@ -103,6 +103,63 @@ class MyPlugin(Plugin):
         """
         # Implementation
         return result
+```
+
+The `action` parameter provides a human-readable description of what the function does, which is useful for tracking and reporting.
+
+### Function Tracking and Execution Results
+
+Agently SDK provides functionality to track function execution and get detailed information about each function call.
+
+#### ExecutionResult
+
+When function tracking is enabled, decorated functions return `ExecutionResult` objects that include:
+
+- The actual return value of the function (`value`)
+- The human-readable action description (`action`)
+- Metadata about the execution (`metadata`), such as:
+  - Duration of the function call
+  - Function name
+  - Arguments passed to the function
+
+```python
+from agently_sdk.plugins import track_function_calls
+
+# Enable function tracking
+track_function_calls(True)
+
+# Call a plugin function
+result = my_plugin.some_function("arg1", "arg2")
+
+# Access the execution information
+print(f"Action: {result.action}")
+print(f"Duration: {result.metadata['duration']} seconds")
+print(f"Actual value: {result.value}")
+```
+
+#### Getting Raw Results
+
+For backward compatibility, you can use the `get_result` helper function to extract the raw return value from either an `ExecutionResult` or a direct value:
+
+```python
+from agently_sdk.plugins import get_result
+
+# Works with both ExecutionResult objects and direct values
+raw_value = get_result(result)
+```
+
+#### Enabling and Disabling Function Tracking
+
+Function tracking is disabled by default for backward compatibility. You can enable it globally:
+
+```python
+from agently_sdk.plugins import track_function_calls
+
+# Enable function tracking
+track_function_calls(True)
+
+# Disable function tracking
+track_function_calls(False)
 ```
 
 ## Best Practices

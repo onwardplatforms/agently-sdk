@@ -4,7 +4,7 @@ Tests for the Plugin base class.
 
 import pytest
 
-from agently_sdk.plugins import Plugin, PluginVariable, kernel_function
+from agently_sdk.plugins import Plugin, PluginVariable, get_result, kernel_function
 
 
 class SamplePlugin(Plugin):
@@ -66,7 +66,7 @@ def test_kernel_function_execution():
     """Test that kernel functions can be executed."""
     plugin = SamplePlugin()
     result = plugin.test_function("hello")
-    assert result == "hello"
+    assert get_result(result) == "hello"
 
     result = plugin.use_var()
-    assert result == "default"
+    assert get_result(result) == "default"
