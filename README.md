@@ -11,6 +11,14 @@ The official SDK for developing extensions for the [Agently](https://github.com/
 pip install agently-sdk
 ```
 
+For development versions or pre-releases:
+
+```bash
+pip install agently-sdk==0.5.2.dev0
+```
+
+See our [Versioning Guide](VERSIONING.md) for information about our release process and version numbering.
+
 ## Quick Start
 
 Create a simple plugin:
