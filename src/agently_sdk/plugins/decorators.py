@@ -6,10 +6,7 @@ This module provides decorators for use in Agently plugins.
 
 import functools
 import inspect
-import time
 from typing import Any, Callable, Optional, TypeVar, Union, cast, overload
-
-from agently_sdk.plugins.variables import ExecutionResult
 
 # Import the original kernel_function from semantic_kernel
 try:
@@ -26,24 +23,6 @@ except ImportError:
 F = TypeVar("F", bound=Callable[..., Any])
 DecoratorFunc = Callable[[F], F]
 
-# Global flag to control execution reporting
-_COLLECT_EXECUTION_INFO = False
-
-
-def track_function_calls(enabled: bool = True) -> None:
-    """
-    Globally enable or disable tracking of function calls.
-
-    When enabled, functions decorated with @agently_function or @kernel_function
-    will return ExecutionResult objects containing the actual value and metadata.
-    When disabled, they will return the actual value directly.
-
-    Args:
-        enabled: Whether to enable function call tracking
-    """
-    global _COLLECT_EXECUTION_INFO
-    _COLLECT_EXECUTION_INFO = enabled
-
 
 @overload
 def agently_function(func: F) -> F: ...
@@ -56,7 +35,6 @@ def agently_function(
     description: Optional[str] = None,
     name: Optional[str] = None,
     input_description: Optional[str] = None,
-    action: Optional[str] = None,
 ) -> DecoratorFunc: ...
 
 
@@ -66,7 +44,6 @@ def agently_function(
     description: Optional[str] = None,
     name: Optional[str] = None,
     input_description: Optional[str] = None,
-    action: Optional[str] = None,
 ) -> Union[F, DecoratorFunc]:
     """
     Decorator for functions that should be exposed as Agently functions.
@@ -81,7 +58,7 @@ def agently_function(
 
     or
 
-    @agently_function(description="My function", action="performing an action")
+    @agently_function(description="My function")
     def my_func(): ...
 
     Args:
@@ -89,7 +66,6 @@ def agently_function(
         description: The description of the function
         name: The name of the function (defaults to the function name)
         input_description: The description of the input parameter
-        action: A human-readable description of what the function does
 
     Returns:
         The decorated function
@@ -100,37 +76,7 @@ def agently_function(
 
         @functools.wraps(f)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Only collect execution info if globally enabled
-            collect_info = _COLLECT_EXECUTION_INFO
-
-            # Start timing
-            start_time = time.time()
-
-            # Call the original function
-            result = f(*args, **kwargs)
-
-            # If we're collecting execution info, wrap the result
-            if collect_info:
-                # Calculate duration
-                duration = time.time() - start_time
-
-                # Create metadata
-                metadata = {
-                    "function_name": getattr(f, "_name", None) or f.__name__,
-                    "duration": duration,
-                    # Skip 'self' if this is a method call
-                    "args": args[1:] if args and hasattr(args[0], "__class__") else args,
-                    "kwargs": kwargs,
-                }
-
-                # Get the action (human-readable description of what the function does)
-                action_str = action or f.__name__
-
-                # Wrap the result
-                return ExecutionResult(value=result, action=action_str, metadata=metadata)
-            else:
-                # Return the original result
-                return result
+            return f(*args, **kwargs)
 
         # Ensure our Plugin class can find this function
         wrapper._is_kernel_function = True  # type: ignore
@@ -138,7 +84,6 @@ def agently_function(
         wrapper._description = description  # type: ignore
         wrapper._name = name  # type: ignore
         wrapper._input_description = input_description  # type: ignore
-        wrapper._action = action  # type: ignore
 
         # Add the __kernel_function__ attribute for compatibility with Semantic Kernel
         setattr(wrapper, "__kernel_function__", True)
@@ -183,4 +128,4 @@ def agently_function(
 kernel_function = agently_function
 
 
-__all__ = ["agently_function", "kernel_function", "track_function_calls"]
+__all__ = ["agently_function", "kernel_function"]

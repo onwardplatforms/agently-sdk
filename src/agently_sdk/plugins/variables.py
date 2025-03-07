@@ -6,7 +6,6 @@ Plugin variable system for Agently plugins.
 
 import re
 from dataclasses import dataclass
-from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Type, Union, cast
 
 
@@ -357,60 +356,4 @@ class PluginVariable:
         return result
 
 
-class ExecutionResult:
-    """
-    Container for function execution results with additional metadata.
-
-    This class wraps the actual result of a function call with additional
-    information about the execution, such as the action performed, duration,
-    and other metadata.
-
-    Attributes:
-        value: The actual return value from the function call
-        action: A human-readable description of what the function does
-        metadata: A dictionary containing additional execution information
-    """
-
-    def __init__(
-        self, value: Any, action: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """
-        Initialize an ExecutionResult.
-
-        Args:
-            value: The actual return value from the function call
-            action: A human-readable description of what the function does
-            metadata: A dictionary containing additional execution information
-        """
-        self.value = value
-        self.action = action
-        self.metadata = metadata or {}
-
-    def __str__(self) -> str:
-        """String representation showing the action and result."""
-        return f"{self.action}: {self.value}"
-
-    def __repr__(self) -> str:
-        """Detailed representation including metadata."""
-        return f"ExecutionResult(value={repr(self.value)}, action={repr(self.action)}, metadata={repr(self.metadata)})"
-
-
-def get_result(value: Any) -> Any:
-    """
-    Extract the raw result from either an ExecutionResult or a direct value.
-
-    This helper function is useful for maintaining backward compatibility
-    with code that expects raw return values.
-
-    Args:
-        value: Either an ExecutionResult or a direct value
-
-    Returns:
-        The raw result value
-    """
-    if isinstance(value, ExecutionResult):
-        return value.value
-    return value
-
-
-__all__ = ["PluginVariable", "VariableValidation", "ExecutionResult", "get_result"]
+__all__ = ["PluginVariable", "VariableValidation"]
