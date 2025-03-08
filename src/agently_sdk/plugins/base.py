@@ -3,7 +3,7 @@ Base Plugin class for Agently plugins.
 """
 
 import inspect
-from typing import Any, Callable, Dict, List, Mapping, Optional, Type, get_type_hints
+from typing import Any, Callable, Dict
 
 from agently_sdk.plugins.variables import PluginVariable  # Adjust import path as needed
 

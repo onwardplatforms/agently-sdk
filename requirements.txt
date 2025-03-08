@@ -1,9 +1,4 @@
-build
-twine
-pytest
-pytest-cov
-black
-isort
-mypy
+# Core dependencies
 semantic-kernel
 pydantic
+-e .
