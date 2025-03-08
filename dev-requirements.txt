@@ -1,0 +1,19 @@
+# Testing
+pytest
+pytest-cov
+pytest-mock
+pytest-asyncio
+
+# Code quality
+# Pin specific versions to avoid dependency issues
+black
+click
+isort
+mypy
+flake8
+flake8-docstrings
+autoflake
+
+# Development tools
+build
+twine

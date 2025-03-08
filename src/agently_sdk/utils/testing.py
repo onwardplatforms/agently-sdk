@@ -4,7 +4,7 @@ Utilities for testing Agently plugins.
 This module provides functions for inspecting and validating plugins.
 """
 
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Type
 
 from agently_sdk.plugins import Plugin
 

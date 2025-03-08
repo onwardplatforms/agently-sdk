@@ -6,7 +6,7 @@ Plugin variable system for Agently plugins.
 
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Type, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Type, Union
 
 
 @dataclass

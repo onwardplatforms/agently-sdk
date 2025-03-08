@@ -4,8 +4,6 @@ Tests for the VariableValidation class.
 
 import re
 
-import pytest
-
 from agently_sdk.plugins.variables import PluginVariable, VariableValidation
 
 
