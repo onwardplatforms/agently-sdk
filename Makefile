@@ -1,7 +1,7 @@
 .PHONY: help venv install install-dev clean test lint format check all version autofix
 
 # Variables
-PYTHON = $(shell pyenv which python3)
+PYTHON = python3
 VENV = venv
 VENV_BIN = $(VENV)/bin
 PIP = $(VENV_BIN)/pip
